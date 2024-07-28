@@ -53,7 +53,7 @@
 
                 var request = {
                     location: pyrmont,
-                    radius: '150',
+                    radius: '500',
                     query: 'restaurant'
                 };
                 console.log(request);
@@ -66,33 +66,46 @@
 
                 console.log("RESULTADOS", results.length);
 
+                results.sort(function(a, b){
+                    return b.user_ratings_total - a.user_ratings_total;
+                });
+
                 for (let i = 0; i < results.length; i++) {
-                let place = results[i];
-                console.log(results[i].name, results[i]);
-            }
+                    let place = results[i];
+                    console.log(results[i].name, results[i]);
+                }
 
-            showLocal(results);
+            showLocals(results);
 
-            
         }
     }
 
-    function showLocal(results){
-        let j = random(results.length);
-        let local = results[j];
+    function showLocals(results){
+        //let j = random(results.length);
+        //let local = results[j];
 
-        console.log(local);
+        //console.log(local);
 
-        document.querySelector("#local #name").innerHTML = local.name;
-        document.querySelector("#local #direccion").innerHTML = local.formatted_address;
+        for ( let local of results){
+
+        
+        let div =  document.querySelector(".local.model").cloneNode(true);
+
+        div.classList.remove("model");
+        div.querySelector("#name").innerHTML = `${local.name} (${local.user_ratings_total}) `;
+        div.querySelector("#direccion").innerHTML = local.formatted_address;
+
+        document.querySelector("#list").appendChild(div);
 
         const request = {
             placeId: local.place_id,
             //fields: ['name', 'rating', 'formatted_phone_number', 'geometry']
             };
 
+        }
+/*
         service = new google.maps.places.PlacesService(map);
-        service.getDetails(request, callbackDetail);
+        service.getDetails(request, callbackDetail);*/
 
     }
 
@@ -118,10 +131,12 @@
 <body>
     <p id="demo"></p>
     <div id="map"></div>
-    <div id="local">
+    <div id="list">
+    <div class="local model">
         <h3 id="name"></h3>
         <div class="" id="direccion"></div>
         <div > <a href="" id="enlace">Visitanos</a></div>
+    </div>
     </div>
 </body>
 </html>
