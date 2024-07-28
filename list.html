@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random Restaurante</title>
     <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDktEJAtzgPpH6fiaXdoMcIL2RxhrkXALM&libraries=places&callback=initMap">
-</script>
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDktEJAtzgPpH6fiaXdoMcIL2RxhrkXALM&libraries=places&callback=initMap">
+        </script>
+    <style>
+        .model {
+            display: none;
+        }
+    </style>
     <script>
         const URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?";
         const APIKEY = "AIzaSyDktEJAtzgPpH6fiaXdoMcIL2RxhrkXALM";
@@ -14,7 +20,7 @@
         let lat = null;
         let lng = null;
 
-        console.log("X",x);
+        console.log("X", x);
 
         function getLocation() {
             if (navigator.geolocation) {
@@ -24,13 +30,30 @@
             }
         }
 
-        async function showPosition(position) {
-            console.log("showPosition",position.coords);
+        search = async function (e) {
+            e.preventDefault();
+            console.log("Search");
+            let radius = parseInt(document.querySelector("#distance").value);
             
+
+            var pyrmont = new google.maps.LatLng(lat, lng);
+            var request = {
+                location: pyrmont,
+                radius: '500',
+                query: 'restaurant'
+            };
+            console.log(request);
+            service = new google.maps.places.PlacesService(map);
+            service.textSearch(request, callback);
+        }
+
+        async function showPosition(position) {
+            console.log("showPosition", position.coords);
+
             lat = position.coords.latitude;
             lng = position.coords.longitude;
 
-            let res = await fetch(`${URL}&location=${lat},${lng}&type=restaurant&key=${APIKEY}`,{mode:'no-cors'});
+            let res = await fetch(`${URL}&location=${lat},${lng}&type=restaurant&key=${APIKEY}`, { mode: 'no-cors' });
 
             console.log(res, res.body);
 
@@ -40,33 +63,34 @@
             initMap();
         }
 
-        async function initMap(){
+        async function initMap() {
             console.log("POSITION", lat, lng);
-            if ( lat == null ) return ;
+            if (lat == null) return;
             console.log("INITMAP");
-            var pyrmont = new google.maps.LatLng(lat,lng);
+            var pyrmont = new google.maps.LatLng(lat, lng);
 
             map = new google.maps.Map(document.getElementById('map'), {
                 center: pyrmont,
                 zoom: 15
             });
 
-                var request = {
-                    location: pyrmont,
-                    radius: '500',
-                    query: 'restaurant'
-                };
-                console.log(request);
-                service = new google.maps.places.PlacesService(map);
-                service.textSearch(request, callback);
-            }
+            //document.querySelector("#submit").addEventListener("onclick", search);
+            document.querySelector("#submit").onclick = search;
+            let radius = document.querySelector("#distance").value;
+            console.log(document.querySelector("#submit"), radius);
+            console.log(search);
+
+        }
+
+
+
 
         function callback(results, status) {
-          if (status == google.maps.places.PlacesServiceStatus.OK) {
+            if (status == google.maps.places.PlacesServiceStatus.OK) {
 
                 console.log("RESULTADOS", results.length);
 
-                results.sort(function(a, b){
+                results.sort(function (a, b) {
                     return b.user_ratings_total - a.user_ratings_total;
                 });
 
@@ -75,69 +99,86 @@
                     console.log(results[i].name, results[i]);
                 }
 
-            showLocals(results);
+                showLocals(results);
+
+            }
+        }
+
+        function showLocals(results) {
+            //let j = random(results.length);
+            //let local = results[j];
+
+            //console.log(local);
+
+            let minvotes = parseInt(document.querySelector("#minvotes").value);
+
+            for (let local of results) {
+
+                if ( local.user_ratings_total < minvotes ) continue;
+
+                let div = document.querySelector(".local.model").cloneNode(true);
+
+                div.classList.remove("model");
+                div.querySelector("#name").innerHTML = `${local.name} <small>${local.rating}&#11088; (${local.user_ratings_total}) </small>`;
+                div.querySelector("#direccion").innerHTML = local.formatted_address;
+                if ( local.plus_code ){
+                    div.querySelector("#enlace").classList.remove("model");
+                    div.querySelector("#enlace").href = `https://plus.codes/${local.plus_code.global_code}`;
+                }
+                
+
+                document.querySelector("#list").appendChild(div);
+
+                const request = {
+                    placeId: local.place_id,
+                    //fields: ['name', 'rating', 'formatted_phone_number', 'geometry']
+                };
+
+            }
+            /*
+                    service = new google.maps.places.PlacesService(map);
+                    service.getDetails(request, callbackDetail);*/
 
         }
-    }
 
-    function showLocals(results){
-        //let j = random(results.length);
-        //let local = results[j];
-
-        //console.log(local);
-
-        for ( let local of results){
-
-        
-        let div =  document.querySelector(".local.model").cloneNode(true);
-
-        div.classList.remove("model");
-        div.querySelector("#name").innerHTML = `${local.name} <small>${local.rating}&#11088; (${local.user_ratings_total}) </small>`;
-        div.querySelector("#direccion").innerHTML = local.formatted_address;
-        div.querySelector("#enlace").href = `https://plus.codes/${local.plus_code.global_code}`;
-
-        document.querySelector("#list").appendChild(div);
-
-        const request = {
-            placeId: local.place_id,
-            //fields: ['name', 'rating', 'formatted_phone_number', 'geometry']
-            };
-
+        function callbackDetail(place, status) {
+            if (status == google.maps.places.PlacesServiceStatus.OK) {
+                console.log(place);
+                document.querySelector("#local #enlace").href = place.url;
+            }
         }
-/*
-        service = new google.maps.places.PlacesService(map);
-        service.getDetails(request, callbackDetail);*/
 
-    }
-
-    function callbackDetail( place, status){
-        if (status == google.maps.places.PlacesServiceStatus.OK) {
-            console.log(place);
-            document.querySelector("#local #enlace").href = place.url;
+        function random(max) {
+            return Math.floor(Math.random() * max);
         }
-    }
 
-    function random(max){
-        return Math.floor(Math.random() * max);
-    }
-        
 
-        setTimeout(getLocation, 1500 );
+        setTimeout(getLocation, 1500);
         /*
         https://maps.googleapis.com/maps/api/place/nearbysearch/json?keyword=cruise&location=-33.8670522%2C151.1957362&radius=1500&type=restaurant&key=AIzaSyDktEJAtzgPpH6fiaXdoMcIL2RxhrkXALM
 
         */
     </script>
 </head>
+
 <body>
     <p id="demo"></p>
     <div id="map"></div>
-    <div id="list">
-    <div class="local model">
-        <h3 id="name"></h3>
-        <div class="" id="direccion"></div>
-        <div > <a href="" id="enlace">Visitanos</a></div>
+    <div id="form">
+        <form onsubmit="search">
+            <label>Distance <input type="text" id="distance" value="500" /></label>
+            <label>Min Votes <input type="text" id="minvotes" value="10" /></label>
+            <a href="#" id="submit">Buscar</a>
+
+        </form>
     </div>
+    <div id="list">
+        <div class="local model">
+            <h3 id="name"></h3>
+            <div class="" id="direccion"></div>
+            <div> <a href="" class="model" id="enlace">Visitanos</a></div>
+        </div>
     </div>
 </body>
+
 </html>
