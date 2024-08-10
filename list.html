@@ -20,6 +20,8 @@
         let lat = null;
         let lng = null;
 
+        let restaurantes = [];
+
         console.log("X", x);
 
         function getLocation() {
@@ -31,10 +33,13 @@
         }
 
         search = async function (e) {
+
+            restaurantes = [];
+
             e.preventDefault();
             console.log("Search");
             let radius = parseInt(document.querySelector("#distance").value);
-            
+
 
             var pyrmont = new google.maps.LatLng(lat, lng);
             var request = {
@@ -85,21 +90,31 @@
 
 
 
-        function callback(results, status) {
+        function callback(results, status, pagination) {
             if (status == google.maps.places.PlacesServiceStatus.OK) {
 
                 console.log("RESULTADOS", results.length);
 
-                results.sort(function (a, b) {
-                    return b.user_ratings_total - a.user_ratings_total;
-                });
 
-                for (let i = 0; i < results.length; i++) {
-                    let place = results[i];
-                    console.log(results[i].name, results[i]);
+                restaurantes.concat(results);
+
+                if (pagination.hasNextPage) {
+                    setTimeout(function () { pagination.nextPage(); }, 2000)
+                }else {
+
+                    results.sort(function (a, b) {
+                        return b.user_ratings_total - a.user_ratings_total;
+                    });
+
+                    for (let i = 0; i < results.length; i++) {
+                        let place = results[i];
+                        console.log(results[i].name, results[i]);
+                    }
+
+                    showLocals(results);
                 }
 
-                showLocals(results);
+
 
             }
         }
@@ -114,18 +129,18 @@
 
             for (let local of results) {
 
-                if ( local.user_ratings_total < minvotes ) continue;
+                if (local.user_ratings_total < minvotes) continue;
 
                 let div = document.querySelector(".local.model").cloneNode(true);
 
                 div.classList.remove("model");
                 div.querySelector("#name").innerHTML = `${local.name} <small>${local.rating}&#11088; (${local.user_ratings_total}) </small>`;
                 div.querySelector("#direccion").innerHTML = local.formatted_address;
-                if ( local.plus_code ){
+                if (local.plus_code) {
                     div.querySelector("#enlace").classList.remove("model");
                     div.querySelector("#enlace").href = `https://plus.codes/${local.plus_code.global_code}`;
                 }
-                
+
 
                 document.querySelector("#list").appendChild(div);
 
